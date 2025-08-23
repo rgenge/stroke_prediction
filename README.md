@@ -14,7 +14,18 @@ uv sync
 ```
 Copy data and put in two folders Non Stroke and Stroke :
 https://www.kaggle.com/datasets/abdussalamelhanashy/annotated-facial-images-for-stroke-classification/data
+
 https://www.kaggle.com/datasets/kaitavmehta/facial-droop-and-facial-paralysis-image/data
+
+## 📂 Folder Structure
+```
+stroke_prediction/
+├── Stroke/          # Folder with stroke-positive images
+├── NonStroke/       # Folder with stroke-negative images
+├── main.py          # Original XGBoost implementation
+├── main2.py         # CNN implementation (recommended)
+└── models/          # Saved model directory
+```
 
 ## 🧠 Model Training (Option 1)
 1. Run the program:
@@ -34,16 +45,6 @@ https://www.kaggle.com/datasets/kaitavmehta/facial-droop-and-facial-paralysis-im
    ```
 2. Select option **2** (Test with Image)
 3. Enter path to the image you want to analyze
-
-## 📂 Folder Structure
-```
-stroke_prediction/
-├── Stroke/          # Folder with stroke-positive images
-├── NonStroke/       # Folder with stroke-negative images
-├── main.py          # Original XGBoost implementation
-├── main2.py         # CNN implementation (recommended)
-└── models/          # Saved model directory
-```
 
 ## 📊 Expected Output
 - Training: Accuracy metrics and PDF report
