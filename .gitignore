@@ -1,0 +1,7 @@
+.venv/
+.NonStroke/
+.Stroke/
+.models/
+.stroke_analyser.egg-info/
+.__pycache__/
+.Test-Pictures/

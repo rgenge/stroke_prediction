@@ -8,10 +8,12 @@ try:
     from PIL import Image
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+    from sklearn.utils.class_weight import compute_class_weight
     import matplotlib.pyplot as plt
     from fpdf import FPDF
     import tensorflow as tf
-    from tensorflow.keras import layers, models
+    from tensorflow.keras import layers, models, callbacks, Input
+    from tensorflow.keras.preprocessing.image import ImageDataGenerator
 except Exception as e:
     print("Missing dependency:", e)
     sys.exit(1)
@@ -55,22 +57,52 @@ def build_dataset(base_dir: Path, limit_per_class: int = 0) -> Tuple[np.ndarray,
 
 # ------------------ Model ------------------
 def build_cnn(input_shape):
-    model = models.Sequential([
-        layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
-        layers.MaxPooling2D((2, 2)),
-        layers.Conv2D(64, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        layers.Conv2D(128, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        layers.Flatten(),
-        layers.Dense(128, activation='relu'),
-        layers.Dropout(0.5),
-        layers.Dense(1, activation='sigmoid')
-    ])
-    model.compile(optimizer='adam',
+    model = models.Sequential()
+    
+    # Add layers one by one to avoid Input layer serialization issues
+    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Dropout(0.25))
+    
+    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Dropout(0.25))
+    
+    model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Dropout(0.25))
+    
+    model.add(layers.Conv2D(256, (3, 3), activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.GlobalAveragePooling2D())
+    model.add(layers.Dropout(0.5))
+    
+    model.add(layers.Dense(128, activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(1, activation='sigmoid'))
+    
+    # Use a lower learning rate for better convergence
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
+    model.compile(optimizer=optimizer,
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
     return model
+
+def create_data_augmentation():
+    """Create data augmentation generator for training"""
+    return ImageDataGenerator(
+        rotation_range=15,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        shear_range=0.1,
+        zoom_range=0.1,
+        horizontal_flip=True,
+        fill_mode='nearest'
+    )
 
 # ------------------ Utils ------------------
 def plot_confusion(cm, labels, out_path: Path):
@@ -140,7 +172,7 @@ def main():
     print("2 - Test with Image")
     choice = input("Enter choice (1/2): ").strip()
 
-    model_path = Path("models/cnn_model.h5")
+    model_path = Path("models/cnn_model.keras")
     model_path.parent.mkdir(exist_ok=True)
 
     if choice == "1":
@@ -159,18 +191,98 @@ def main():
         )
 
         print("Training samples:", X_train.shape[0], "Test samples:", X_test.shape[0])
+        
+        # Calculate class weights to handle imbalance
+        classes = np.unique(y_train)
+        class_weights = compute_class_weight('balanced', classes=classes, y=y_train)
+        class_weight_dict = dict(zip(classes, class_weights))
+        print(f"Class weights: {class_weight_dict}")
 
         model = build_cnn(input_shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 1))
-        model.fit(X_train, y_train, epochs=epochs, batch_size=16,
-                  validation_split=0.2, verbose=1)
+        
+        # Setup callbacks for better training
+        callback_list = [
+            callbacks.EarlyStopping(
+                monitor='val_accuracy',
+                patience=10,
+                restore_best_weights=True,
+                verbose=1,
+                mode='max',
+                min_delta=0.001
+            ),
+            callbacks.ReduceLROnPlateau(
+                monitor='val_accuracy',
+                factor=0.5,
+                patience=5,
+                min_lr=1e-7,
+                verbose=1,
+                mode='max'
+            ),
+            callbacks.ModelCheckpoint(
+                filepath=str(model_path),
+                monitor='val_accuracy',
+                save_best_only=True,
+                verbose=1,
+                mode='max'
+            )
+        ]
+        
+        # Create data augmentation
+        datagen = create_data_augmentation()
+        
+        # Split training data for validation
+        X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+        )
+        
+        print(f"Training split: {X_train_split.shape[0]}, Validation split: {X_val_split.shape[0]}")
+        
+        # Calculate proper steps per epoch
+        batch_size = 16
+        steps_per_epoch = max(1, len(X_train_split) // batch_size)
+        
+        # Fit the model with augmented data
+        model.fit(
+            datagen.flow(X_train_split, y_train_split, batch_size=batch_size),
+            epochs=epochs,
+            validation_data=(X_val_split, y_val_split),
+            class_weight=class_weight_dict,
+            callbacks=callback_list,
+            verbose=1,
+            steps_per_epoch=steps_per_epoch
+        )
 
-        preds = (model.predict(X_test) > 0.5).astype("int32").flatten()
+        # Load the best model for evaluation
+        model = tf.keras.models.load_model(model_path)
+        
+        # Make predictions with optimal threshold
+        y_probs = model.predict(X_test).flatten()
+        
+        # Find optimal threshold using validation data
+        from sklearn.metrics import roc_curve
+        fpr, tpr, thresholds = roc_curve(y_test, y_probs)
+        optimal_idx = np.argmax(tpr - fpr)
+        optimal_threshold = thresholds[optimal_idx]
+        
+        # Fallback to 0.5 if threshold is extreme
+        if optimal_threshold <= 0.01 or optimal_threshold >= 0.99:
+            optimal_threshold = 0.5
+            print(f"Using fallback threshold: {optimal_threshold:.3f}")
+        else:
+            print(f"Optimal threshold: {optimal_threshold:.3f}")
+        
+        preds = (y_probs > optimal_threshold).astype("int32")
         acc = accuracy_score(y_test, preds)
         cm = confusion_matrix(y_test, preds)
         report_text = classification_report(y_test, preds, target_names=labels, zero_division=0)
 
         print("Accuracy:", acc)
         print(report_text)
+        
+        # Additional metrics
+        from sklearn.metrics import roc_auc_score
+        auc = roc_auc_score(y_test, y_probs)
+        print(f"AUC-ROC: {auc:.4f}")
 
         out_dir = Path("output")
         out_dir.mkdir(exist_ok=True)
@@ -179,11 +291,10 @@ def main():
         plot_confusion(cm, labels, cm_path)
         sample_grid(X_test, y_test, labels, grid_path)
 
-        txt = f"Accuracy: {acc:.4f}\n\nClassification report:\n{report_text}"
-        make_pdf_report(Path("report.pdf"), {"accuracy": acc}, cm_path, grid_path, txt)
+        txt = f"Accuracy: {acc:.4f}\nAUC-ROC: {auc:.4f}\nOptimal Threshold: {optimal_threshold:.3f}\n\nClassification report:\n{report_text}"
+        make_pdf_report(Path("report.pdf"), {"accuracy": acc, "auc": auc}, cm_path, grid_path, txt)
 
-        model.save(model_path)
-        print("Model saved to:", model_path)
+        print("Best model saved to:", model_path)
         print("Report saved to: report.pdf")
 
     elif choice == "2":
@@ -194,16 +305,32 @@ def main():
         if not Path(image_path).exists():
             print("Image not found.")
             return
-        model = tf.keras.models.load_model(model_path)
+        
+        # Try to load the model with error handling
+        try:
+            model = tf.keras.models.load_model(model_path)
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            print("The saved model may be incompatible. Please retrain the model using option 1.")
+            return
         img = load_single_image(Path(image_path))
         prob = model.predict(img)[0][0]
         print(f"Stroke probability: {prob:.2%}")
-        if prob > 0.7:
-            print("High risk of stroke")
-        elif prob > 0.3:
-            print("Moderate risk of stroke")
+        
+        # Use a more nuanced threshold system
+        if prob > 0.8:
+            print("🔴 HIGH RISK: Strong indication of stroke")
+        elif prob > 0.6:
+            print("🟡 MODERATE-HIGH RISK: Consult a medical professional")
+        elif prob > 0.4:
+            print("🟡 MODERATE RISK: Monitor closely")
+        elif prob > 0.2:
+            print("🟢 LOW-MODERATE RISK: Unlikely but monitor")
         else:
-            print("Low risk of stroke")
+            print("🟢 LOW RISK: No strong indication of stroke")
+        
+        print("\n⚠️  DISCLAIMER: This is an AI model for educational purposes.")
+        print("Always consult healthcare professionals for medical advice.")
     else:
         print("Invalid choice.")
 

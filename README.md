@@ -62,3 +62,57 @@ stroke_prediction/
 - fpdf2
 
 💡 Tip: All dependencies are automatically installed with `uv sync`
+
+# Stroke Prediction API
+
+A FastAPI-based web application for stroke prediction using a trained CNN model.
+
+## Quick Start
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run the application:**
+   ```bash
+   python run.py
+   ```
+
+3. **Open your browser:**
+   - Main app: http://localhost:8000
+   - API docs: http://localhost:8000/docs
+
+## Features
+
+- 🖼️ **Image Upload**: Drag & drop or click to upload medical images
+- 🧠 **AI Analysis**: Uses trained CNN model for stroke prediction
+- 📊 **Risk Assessment**: Provides risk levels with probability scores
+- 📱 **Responsive UI**: Modern, mobile-friendly interface
+- ⚡ **Fast API**: RESTful API with automatic documentation
+
+## API Endpoints
+
+- `GET /` - Main web interface
+- `POST /predict` - Upload image for prediction
+- `GET /health` - Health check endpoint
+
+## Project Structure
+
+```
+./
+├── app.py          # FastAPI application
+├── routes.py       # API routes (Django-style)
+├── run.py          # Startup script
+├── requirements.txt # Dependencies
+├── templates/      # HTML templates
+│   └── index.html  # Main UI
+└── static/         # Static files (CSS, JS)
+```
+
+## Notes
+
+- Model file should be at: `../models/cnn_model.keras`
+- Supports common image formats (JPEG, PNG, etc.)
+- Images are automatically resized to 128x128 for model input
+- Provides medical disclaimer for educational use only

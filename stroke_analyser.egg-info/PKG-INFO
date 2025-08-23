@@ -1,0 +1,82 @@
+Metadata-Version: 2.4
+Name: stroke-analyser
+Version: 0.1.0
+Summary: Simple stroke image analyser and PDF report generator
+Author-email: Your Name <you@example.com>
+License: MIT
+Project-URL: homepage, https://example.com/
+Project-URL: repository, https://example.com/repo
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: pillow>=8.0
+Requires-Dist: numpy>=1.21
+Requires-Dist: scikit-learn>=1.0
+Requires-Dist: xgboost>=1.5
+Requires-Dist: matplotlib>=3.4
+Requires-Dist: fpdf2>=2.4
+Requires-Dist: joblib>=1.1
+
+# Stroke Prediction System
+
+This system analyzes medical images to predict stroke risk using a CNN model.
+
+## 🚀 Quick Start
+
+```bash
+# Create and activate virtual environment
+uv venv
+source .venv/bin/activate
+
+# Install dependencies
+uv sync
+```
+Copy data and put in two folders Non Stroke and Stroke :
+https://www.kaggle.com/datasets/abdussalamelhanashy/annotated-facial-images-for-stroke-classification/data
+
+https://www.kaggle.com/datasets/kaitavmehta/facial-droop-and-facial-paralysis-image/data
+
+## 📂 Folder Structure
+```
+stroke_prediction/
+├── Stroke/          # Folder with stroke-positive images
+├── NonStroke/       # Folder with stroke-negative images
+├── main.py          # Original XGBoost implementation
+├── main2.py         # CNN implementation (recommended)
+└── models/          # Saved model directory
+```
+
+## 🧠 Model Training (Option 1)
+1. Run the program:
+   ```bash
+   python main.py
+   ```
+2. Select option **1** (Train/Run Model)
+3. Provide inputs:
+   - Data directory (default: current directory)
+   - Image limit per class (0 for no limit)
+   - Training epochs (default: 10)
+
+## 🔍 Prediction (Option 2)
+1. After training, run:
+   ```bash
+   python main.py
+   ```
+2. Select option **2** (Test with Image)
+3. Enter path to the image you want to analyze
+
+## 📊 Expected Output
+- Training: Accuracy metrics and PDF report
+- Prediction: Probability score with risk level:
+  - >70%: High risk
+  - 30-70%: Moderate risk
+  - <30%: Low risk
+
+## ⚙️ Dependencies
+- Python 3.8+
+- TensorFlow/Keras
+- scikit-learn
+- PIL/Pillow
+- matplotlib
+- fpdf2
+
+💡 Tip: All dependencies are automatically installed with `uv sync`

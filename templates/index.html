@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stroke Prediction - AI Analysis</title>
+    <meta name="description" content="AI-powered stroke prediction from medical images using deep learning technology">
+    <meta name="keywords" content="stroke prediction, AI, medical imaging, deep learning, healthcare">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Stroke Prediction</h1>
+            <p>Upload a medical image for AI-powered stroke analysis</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drag and drop your image here</div>
+            <div>or</div>
+            <br>
+            <button class="upload-btn" onclick="openFileDialog()">
+                Choose File
+            </button>
+        </div>
+
+        <input type="file" id="fileInput" class="file-input" accept="image/*">
+        
+        <img id="imagePreview" class="image-preview" alt="Preview">
+        
+        <button id="predictBtn" class="predict-btn">
+            🔍 Analyze Image
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing image...</p>
+        </div>
+
+        <div id="result" class="result">
+            <div id="resultEmoji" class="result-emoji"></div>
+            <div id="resultRisk" class="result-risk"></div>
+            <div id="resultProbability" class="result-probability"></div>
+            <div id="resultMessage" class="result-message"></div>
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <div class="disclaimer">
+            ⚠️ <strong>Medical Disclaimer:</strong> This tool is for educational purposes only and should not be used as a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical decisions.
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
