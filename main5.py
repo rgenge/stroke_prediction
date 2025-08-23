@@ -1,7 +1,5 @@
 from __future__ import annotations
-import os
 import sys
-import argparse
 from pathlib import Path
 from typing import List, Tuple
 import numpy as np
@@ -20,10 +18,9 @@ except Exception as e:
 
 IMAGE_SIZE = (128, 128)
 
-
+# ------------------ Data Loading ------------------
 def load_images_from_folder(folder: Path, label: int, limit: int = 0) -> Tuple[List[np.ndarray], List[int]]:
-    imgs = []
-    labels = []
+    imgs, labels = [], []
     if not folder.exists():
         return imgs, labels
     files = [p for p in folder.iterdir() if p.is_file()]
@@ -38,10 +35,9 @@ def load_images_from_folder(folder: Path, label: int, limit: int = 0) -> Tuple[L
                 arr = np.expand_dims(arr, axis=-1)
                 imgs.append(arr)
                 labels.append(label)
-        except Exception:
+        except:
             continue
     return imgs, labels
-
 
 def build_dataset(base_dir: Path, limit_per_class: int = 0) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     stroke_dir = base_dir / "Stroke"
@@ -57,7 +53,7 @@ def build_dataset(base_dir: Path, limit_per_class: int = 0) -> Tuple[np.ndarray,
     labels = ["NonStroke", "Stroke"]
     return X, y, labels
 
-
+# ------------------ Model ------------------
 def build_cnn(input_shape):
     model = models.Sequential([
         layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
@@ -76,10 +72,10 @@ def build_cnn(input_shape):
                   metrics=['accuracy'])
     return model
 
-
+# ------------------ Utils ------------------
 def plot_confusion(cm, labels, out_path: Path):
     fig, ax = plt.subplots(figsize=(4, 4))
-    im = ax.imshow(cm, cmap="Blues")
+    ax.imshow(cm, cmap="Blues")
     ax.set_xticks(np.arange(len(labels)))
     ax.set_yticks(np.arange(len(labels)))
     ax.set_xticklabels(labels)
@@ -92,7 +88,6 @@ def plot_confusion(cm, labels, out_path: Path):
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
-
 
 def sample_grid(X: np.ndarray, y: np.ndarray, labels: List[str], out_path: Path, n=6):
     fig, axs = plt.subplots(2, n, figsize=(n * 1.5, 3))
@@ -114,7 +109,6 @@ def sample_grid(X: np.ndarray, y: np.ndarray, labels: List[str], out_path: Path,
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
 
-
 def make_pdf_report(out_pdf: Path, metrics: dict, cm_path: Path, grid_path: Path, txt_report: str):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=10)
@@ -131,54 +125,87 @@ def make_pdf_report(out_pdf: Path, metrics: dict, cm_path: Path, grid_path: Path
         pdf.image(str(grid_path), w=180)
     pdf.output(str(out_pdf))
 
+def load_single_image(image_path: Path) -> np.ndarray:
+    with Image.open(image_path) as im:
+        im = im.convert("L")
+        im = im.resize(IMAGE_SIZE)
+        arr = np.asarray(im, dtype=np.float32) / 255.0
+        arr = np.expand_dims(arr, axis=-1)
+        return np.expand_dims(arr, axis=0)
 
+# ------------------ Main ------------------
 def main():
-    parser = argparse.ArgumentParser(description="CNN-based Stroke Analyser")
-    parser.add_argument("--data_dir", type=str, default=".", help="Base folder containing Stroke/ and NonStroke/")
-    parser.add_argument("--limit", type=int, default=200, help="Max images per class (0 = no limit)")
-    parser.add_argument("--out", type=str, default="report.pdf", help="Output PDF report path")
-    parser.add_argument("--epochs", type=int, default=10, help="Training epochs")
-    args = parser.parse_args()
+    print("Choose an option:")
+    print("1 - Train/Run Model")
+    print("2 - Test with Image")
+    choice = input("Enter choice (1/2): ").strip()
 
-    base = Path(args.data_dir).resolve()
-    X, y, labels = build_dataset(base, limit_per_class=args.limit)
-    if X.size == 0 or y.size == 0:
-        print("No images found. Ensure folders 'Stroke' and 'NonStroke' exist under", base)
-        return
+    model_path = Path("models/cnn_model.h5")
+    model_path.parent.mkdir(exist_ok=True)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=42, stratify=y
-    )
+    if choice == "1":
+        data_dir = input("Enter data directory path: ").strip() or "."
+        limit = int(input("Limit images per class (0 = no limit): ") or "0")
+        epochs = int(input("Training epochs: ") or "10")
 
-    print("Training samples:", X_train.shape[0], "Test samples:", X_test.shape[0])
+        base = Path(data_dir).resolve()
+        X, y, labels = build_dataset(base, limit_per_class=limit)
+        if X.size == 0 or y.size == 0:
+            print("No images found. Ensure folders 'Stroke' and 'NonStroke' exist under", base)
+            return
 
-    model = build_cnn(input_shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 1))
-    history = model.fit(X_train, y_train, epochs=args.epochs, batch_size=16,
-                        validation_split=0.2, verbose=1)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.25, random_state=42, stratify=y
+        )
 
-    preds = (model.predict(X_test) > 0.5).astype("int32").flatten()
-    acc = accuracy_score(y_test, preds)
-    cm = confusion_matrix(y_test, preds)
-    report_text = classification_report(y_test, preds, target_names=labels, zero_division=0)
+        print("Training samples:", X_train.shape[0], "Test samples:", X_test.shape[0])
 
-    print("Accuracy:", acc)
-    print(report_text)
+        model = build_cnn(input_shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 1))
+        model.fit(X_train, y_train, epochs=epochs, batch_size=16,
+                  validation_split=0.2, verbose=1)
 
-    out_dir = Path("output")
-    out_dir.mkdir(exist_ok=True)
+        preds = (model.predict(X_test) > 0.5).astype("int32").flatten()
+        acc = accuracy_score(y_test, preds)
+        cm = confusion_matrix(y_test, preds)
+        report_text = classification_report(y_test, preds, target_names=labels, zero_division=0)
 
-    cm_path = out_dir / "confusion.png"
-    grid_path = out_dir / "samples.png"
-    plot_confusion(cm, labels, cm_path)
-    sample_grid(X_test, y_test, labels, grid_path)
+        print("Accuracy:", acc)
+        print(report_text)
 
-    txt = f"Accuracy: {acc:.4f}\n\nClassification report:\n{report_text}"
-    make_pdf_report(Path(args.out), {"accuracy": acc}, cm_path, grid_path, txt)
+        out_dir = Path("output")
+        out_dir.mkdir(exist_ok=True)
+        cm_path = out_dir / "confusion.png"
+        grid_path = out_dir / "samples.png"
+        plot_confusion(cm, labels, cm_path)
+        sample_grid(X_test, y_test, labels, grid_path)
 
-    model.save("models/cnn_model.h5")
-    print("Model saved to: models/cnn_model.h5")
-    print("Report saved to:", args.out)
+        txt = f"Accuracy: {acc:.4f}\n\nClassification report:\n{report_text}"
+        make_pdf_report(Path("report.pdf"), {"accuracy": acc}, cm_path, grid_path, txt)
 
+        model.save(model_path)
+        print("Model saved to:", model_path)
+        print("Report saved to: report.pdf")
+
+    elif choice == "2":
+        if not model_path.exists():
+            print("No trained model found. Please run option 1 first.")
+            return
+        image_path = input("Enter image path: ").strip()
+        if not Path(image_path).exists():
+            print("Image not found.")
+            return
+        model = tf.keras.models.load_model(model_path)
+        img = load_single_image(Path(image_path))
+        prob = model.predict(img)[0][0]
+        print(f"Stroke probability: {prob:.2%}")
+        if prob > 0.7:
+            print("High risk of stroke")
+        elif prob > 0.3:
+            print("Moderate risk of stroke")
+        else:
+            print("Low risk of stroke")
+    else:
+        print("Invalid choice.")
 
 if __name__ == "__main__":
-    main()
+	main()
