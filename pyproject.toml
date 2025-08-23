@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stroke-analyser"
+version = "0.1.0"
+description = "Simple stroke image analyser and PDF report generator"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  { name="Your Name", email="you@example.com" }
+]
+license = { text = "MIT" }
+dependencies = [
+  "pillow>=8.0",
+  "numpy>=1.21",
+  "scikit-learn>=1.0",
+  "xgboost>=1.5",
+  "matplotlib>=3.4",
+  "fpdf2>=2.4",
+  "joblib>=1.1",
+  "tensorflow>=2.13.1",
+]
+
+[project.urls]
+homepage = "https://example.com/"
+repository = "https://example.com/repo"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
