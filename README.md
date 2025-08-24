@@ -2,8 +2,8 @@
 
 This system analyzes medical images to predict stroke risk using a CNN model.
 
-<video width="20%" controls>
-  <source src="https://github.com/user-attachments/assets/43e6caa3-ab09-45d9-af5d-d25ab5842f8f" type="video/mp4">
+<video src="https://github.com/user-attachments/assets/43e6caa3-ab09-45d9-af5d-d25ab5842f8f" width="400" controls>
+  Your browser does not support the video tag.
 </video>
 
 
