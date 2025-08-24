@@ -19,17 +19,18 @@ This system analyzes medical images to predict stroke risk using a CNN model.
 ## 🚀 Quick Start
 
 ```bash
-# Create and activate virtual environment
+# Create and activate virtual environment using
 uv venv
 source .venv/bin/activate
 
 # Install dependencies
 uv sync
 ```
-Copy data and put in two folders Non Stroke and Stroke :
-https://www.kaggle.com/datasets/abdussalamelhanashy/annotated-facial-images-for-stroke-classification/data
+### Data Sources
 
-https://www.kaggle.com/datasets/kaitavmehta/facial-droop-and-facial-paralysis-image/data
+* [Annotated Facial Images for Stroke Classification](https://www.kaggle.com/datasets/abdussalamelhanashy/annotated-facial-images-for-stroke-classification/data)
+* [Facial Droop and Facial Paralysis Image](https://www.kaggle.com/datasets/kaitavmehta/facial-droop-and-facial-paralysis-image/data)
+* [Stroke Face Dataset](https://universe.roboflow.com/stroke-aware/stroke_face-6sqpf/dataset/2)
 
 ## 📂 Folder Structure
 ```
