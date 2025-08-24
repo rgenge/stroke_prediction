@@ -3,7 +3,15 @@
 This system analyzes medical images to predict stroke risk using a CNN model.
 
 
-https://github.com/user-attachments/assets/f285d513-4e78-4680-aaed-6f80aae8bcf3
+<details>
+<summary>Click to view demo video</summary>
+
+<video controls style="max-width: 600px; width: 100%;">
+  <source src="https://github.com/user-attachments/assets/f285d513-4e78-4680-aaed-6f80aae8bcf3" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+</details>
 
 
 
@@ -122,6 +130,7 @@ A FastAPI-based web application for stroke prediction using a trained CNN model.
 - Images are automatically resized to 128x128 for model input
 
 - Provides medical disclaimer for educational use only
+
 
 
 
