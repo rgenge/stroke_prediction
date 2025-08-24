@@ -9,7 +9,7 @@ description = "Simple stroke image analyser and PDF report generator"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [
-  { name="Your Name", email="you@example.com" }
+  { name="rgenge"}
 ]
 license = { text = "MIT" }
 dependencies = [
@@ -28,8 +28,7 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://example.com/"
-repository = "https://example.com/repo"
+repository = "https://www.github.com/rgenge/stroke_prediction"
 
 [tool.setuptools.packages.find]
 where = ["."]
